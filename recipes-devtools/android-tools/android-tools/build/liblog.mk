@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: MIT (see build/COPYING)
+NAME = liblog
+
+# system/logging/liblog/Android.bp
+liblog_sources = \
+  log_event_list.cpp \
+  log_event_write.cpp \
+  logger_name.cpp \
+  logger_read.cpp \
+  logger_write.cpp \
+  logprint.cpp \
+  properties.cpp \
+
+not_windows_sources = \
+  event_tag_map.cpp \
+
+SOURCES = $(liblog_sources) $(not_windows_sources)
+SOURCES := $(foreach source, $(SOURCES), system/logging/liblog/$(source))
+OBJECTS := $(SOURCES:.cpp=.o)
+
+CXXFLAGS += -fcommon
+CPPFLAGS += \
+  -DLIBLOG_LOG_TAG=1006 \
+  -DSNET_EVENT_LOG_TAG=1397638484 \
+  -Isystem/core/include \
+  -Isystem/core/libcutils/include \
+  -Isystem/libbase/include \
+  -Isystem/logging/liblog/include \
+
+
+LDFLAGS += \
+  -Wl,-rpath='$$ORIGIN' \
+  -Wl,-soname,$(NAME).so.0 \
+  -lpthread \
+  -shared
+
+build: $(OBJECTS)
+	$(CXX) $^ -o out/$(NAME).so.0 $(LDFLAGS)
+	ln -sf $(NAME).so.0 out/$(NAME).so
+
+$(OBJECTS): %.o: %.cpp
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(CPPFLAGS)

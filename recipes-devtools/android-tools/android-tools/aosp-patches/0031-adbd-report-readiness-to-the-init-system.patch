@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Kiernan <alex.kiernan@gmail.com>
+Date: Fri, 13 Nov 2026 12:00:00 +0000
+Subject: [PATCH] adbd: report readiness to the init system
+
+Tell the init system when adbd is ready: sd_notify(READY=1) when built
+with HAVE_SYSTEMD, otherwise a byte written to the FIFO named in
+$ADBD_READY_FIFO, if set (opened non-blocking, so adbd never waits on a
+reader that has given up). Only the first call does anything.
+
+On USB, the right moment is once the USB thread has written the
+functionfs descriptors and registered the transport: the gadget's UDC
+must not be bound before then, or the bind is silently dropped and the
+host never reaches CONFIGURED. usb_init() only starts that thread, so
+an adbd on USB signals from there; otherwise adbd_main() signals before
+entering its event loop.
+
+Upstream-Status: Pending
+
+AI-Generated: Claude Opus 5.5 (Claude Code)
+Signed-off-by: Alex Kiernan <alex.kiernan@gmail.com>
+---
+--- a/packages/modules/adb/adb.h
++++ b/packages/modules/adb/adb.h
+@@ -255,3 +255,9 @@ bool is_usb_enabled();
+ #endif
+ 
+ void usb_init();
++#if !ADB_HOST
++// Tell whoever started adbd that it is ready: sd_notify(READY=1) with systemd,
++// otherwise a byte to the FIFO named in $ADBD_READY_FIFO if set. Only the first
++// call does anything.
++void adbd_notify_ready();
++#endif
+--- a/packages/modules/adb/daemon/main.cpp
++++ b/packages/modules/adb/daemon/main.cpp
+@@ -45,6 +45,12 @@
+ #include "selinux/android.h"
+ #endif
+ 
++#if defined(HAVE_SYSTEMD)
++#include <systemd/sd-daemon.h>
++#endif
++
++#include <mutex>
++
+ #include "adb.h"
+ #include "adb_auth.h"
+ #include "adb_listeners.h"
+@@ -185,6 +191,27 @@ static void drop_privileges() {
+ }
+ #endif
+ 
++void adbd_notify_ready() {
++    static std::once_flag once;
++    std::call_once(once, [] {
++#if defined(HAVE_SYSTEMD)
++        sd_notify(1, "READY=1");
++#else
++        const char* ready_fifo = getenv("ADBD_READY_FIFO");
++        if (ready_fifo != nullptr && *ready_fifo != '\0') {
++            // O_NONBLOCK: with no reader, open() fails with ENXIO rather than
++            // blocking this thread for ever; the reader has given up and
++            // gone ahead without the signal.
++            int fd = adb_open(ready_fifo, O_WRONLY | O_NONBLOCK | O_CLOEXEC);
++            if (fd >= 0) {
++                TEMP_FAILURE_RETRY(adb_write(fd, "1\n", 2));
++                adb_close(fd);
++            }
++        }
++#endif
++    });
++}
++
+ static void setup_adb(const std::vector<std::string>& addrs) {
+ #if defined(__ANDROID__)
+     // Get the first valid port from addrs and register it with mDNS.
+@@ -311,6 +338,12 @@ int adbd_main() {
+     init_jdwp();
+     D("adbd_main(): post init_jdwp()");
+ 
++    // On USB, readiness is signalled from the USB thread once functionfs is
++    // serviced; usb_init() has only started that thread.
++    if (!is_usb) {
++        adbd_notify_ready();
++    }
++
+     D("Event loop starting");
+     fdevent_loop();
+ 
+--- a/packages/modules/adb/daemon/usb.cpp
++++ b/packages/modules/adb/daemon/usb.cpp
+@@ -786,6 +786,12 @@ static void usb_ffs_open_thread() {
+                 std::move(control), std::move(bulk_out), std::move(bulk_in),
+                 std::move(destruction_notifier)));
+         register_transport(transport);
++
++        // functionfs descriptors are written and ep0 is being serviced, so the
++        // gadget will now handle FUNCTIONFS_BIND: this is the moment the UDC
++        // may be bound. Binding earlier races this setup, and the bind is
++        // silently dropped.
++        adbd_notify_ready();
+         future.wait();
+     }
+ }
