@@ -98,6 +98,14 @@ ADBD_REMOUNT_COMMAND ?= "remount"
 # Where adbd reads trusted host keys, colon-separated. Empty: Android's
 # /adb_keys and /data/misc/adb/adb_keys.
 ADBD_AUTH_KEY_PATHS ?= ""
+# The configfs gadget adbd binds to its UDC whenever it has opened functionfs
+# (Android's sys.usb.ffs.ready trigger), e.g.
+# "/sys/kernel/config/usb_gadget/adb": at startup and again after a cable
+# pull or a host going away. Its UDC attribute must be writable by
+# ADBD_USER. Empty: binding is left to whatever set up the gadget.
+ADBD_USB_GADGET ?= ""
+# The UDC to bind. Empty: the only one in /sys/class/udc.
+ADBD_USB_UDC ?= ""
 # Shown by `adb version` and `fastboot --version` in place of Android's build
 # number.
 ADB_BUILD_ID ?= "${PV}"
@@ -112,6 +120,8 @@ EXTRA_OEMAKE = " \
     ADBD_USER=${ADBD_USER} \
     ADBD_REBOOT_COMMAND=${libexecdir}/adbd/reboot \
     ADBD_REMOUNT_COMMAND=${ADBD_REMOUNT_COMMAND} \
+    ADBD_USB_GADGET=${ADBD_USB_GADGET} \
+    ADBD_USB_UDC=${ADBD_USB_UDC} \
     ${PACKAGECONFIG_CONFARGS} \
     ${@'ADBD_AUTH_KEY_PATHS=' + d.getVar('ADBD_AUTH_KEY_PATHS') if d.getVar('ADBD_AUTH_KEY_PATHS') else ''} \
 "
