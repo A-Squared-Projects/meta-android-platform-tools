@@ -18,6 +18,11 @@ Depends on: openembedded-core, meta-oe.
 Maintainer: Alex Kiernan <alex.kiernan@gmail.com>. Issues and pull requests
 on GitHub.
 
+On wrynose, meta-oe has no `android-libboringssl` (it arrived later), so a
+layer providing a backport of it is needed too. If another layer carries an
+older `android-tools` at a higher priority, set
+`PREFERRED_VERSION_android-tools = "37%"` or this recipe won't be picked.
+
 ## On the device
 
 - adbd drops to the `adb` user (created by the recipe) unless `ro.secure=0`.

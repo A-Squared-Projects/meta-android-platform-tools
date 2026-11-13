@@ -7,7 +7,7 @@ SECTION = "console/utils"
 # What's compiled: Apache-2.0 for nearly all of it; BSD-2-Clause in fastboot
 # and libcutils' sockets.cpp; ISC for libcutils' strlcpy.c; MIT for the
 # bundled fmtlib, linked into libbase.
-LICENSE = "Apache-2.0 AND BSD-2-Clause AND ISC AND MIT"
+LICENSE = "Apache-2.0 & BSD-2-Clause & ISC & MIT"
 LIC_FILES_CHKSUM = " \
     file://packages/modules/adb/NOTICE;md5=b8b9862d565b7b0106106ac3ea42fab6 \
     file://system/core/fastboot/fastboot.cpp;beginline=1;endline=27;md5=b058d490dbbeb4d350e3a04f7bdb7444 \
