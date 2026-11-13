@@ -70,11 +70,11 @@ wrynose's `LICENSE` uses `&`, which its oe-core requires, rather than SPDX
   pass it themselves). SMACK needs no PACKAGECONFIG; it's used when active.
 - adbd policy is Android's, from properties: `ro.secure`, `ro.debuggable`,
   `ro.adb.secure` in `ADBD_PROPERTY_FILES` (default
-  `${sysconfdir}/build.prop:/run/build.prop`, later files win). With none
+  `${sysconfdir}/build.prop:${runtimedir}/build.prop`, later files win). With none
   set, adbd drops to `ADBD_USER` and requires a key from every host; a
   development image sets `ro.debuggable=1`. A file staged while adbd runs
   takes effect when adbd restarts.
-- `ADBD_PROPERTY_DIR`: writable properties (default `/run/adbd/properties`)
+- `ADBD_PROPERTY_DIR`: writable properties (default `${runtimedir}/adbd/properties`)
 - `ADBD_USER`: the user adbd drops to (default `adb`)
 - `ADBD_AUTH_KEY_PATHS`: trusted host key files, colon-separated
 - `ADBD_REMOUNT_COMMAND`: run by `adb remount` (default `remount`)
