@@ -83,6 +83,13 @@ wrynose's `LICENSE` uses `&`, which its oe-core requires, rather than SPDX
 - `ADBD_USER`: the user adbd drops to (default `adb`)
 - `ADBD_AUTH_KEY_PATHS`: trusted host key files, colon-separated
 - `ADBD_REMOUNT_COMMAND`: run by `adb remount` (default `remount`)
+- `ADBD_USB_GADGET`, `ADBD_USB_UDC`: let adbd bind its configfs gadget to the
+  UDC each time it opens functionfs, as Android's init does on
+  `sys.usb.ffs.ready`, so USB comes back by itself after a cable pull. The
+  gadget's `UDC` attribute must be writable by `ADBD_USER`, and nothing else
+  should bind it: with systemd, drop meta-oe's `ExecStartPost=`
+  `android-gadget-start`, which fails if the gadget is already bound.
+  `ADBD_USB_UDC` defaults to the only UDC present. Default: off.
 - `ADB_BUILD_ID`: shown by `adb version` / `fastboot --version`
   (default `${PV}`)
 
