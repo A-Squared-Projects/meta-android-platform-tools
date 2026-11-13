@@ -84,9 +84,9 @@ CXXFLAGS:append = "${@bb.utils.contains('PACKAGECONFIG', 'fs-config', ' -DADBD_U
 #   ro.adb.secure=1   ...but still require a key when debuggable
 # ro.* come from these build.prop-style files, later files winning; with
 # none of them set, adbd runs as ADBD_USER and every host needs a key.
-ADBD_PROPERTY_FILES ?= "${sysconfdir}/build.prop:/run/build.prop"
+ADBD_PROPERTY_FILES ?= "${sysconfdir}/build.prop:${runtimedir}/build.prop"
 # Other properties (service.adb.root, ...) live here, one file each.
-ADBD_PROPERTY_DIR ?= "/run/adbd/properties"
+ADBD_PROPERTY_DIR ?= "${runtimedir}/adbd/properties"
 # The security context (SELinux) or label (SMACK) adbd runs in after
 # `adb root`; added to the systemd unit as --root_seclabel. Other init systems
 # pass --root_seclabel=<context> themselves. Empty: adbd's own.
